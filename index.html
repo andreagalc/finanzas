@@ -337,10 +337,12 @@ const CATS=[
   {id:'hogar',label:'Hogar',icon:'🏠',color:'#B5D4F4'},
   {id:'alimentacion',label:'Alimentación',icon:'🛒',color:'#C0DD97'},
   {id:'transporte',label:'Transporte',icon:'🚗',color:'#FAC775'},
-  {id:'salud',label:'Salud',icon:'💊',color:'#F4C0D1'},
+  {id:'salud',label:'Salud',icon:'✚',color:'#F4C0D1'},
+   {id:'bienestar',label:'Bienestar',icon:'🧘',color:'#D8F3DC'},
   {id:'ocio',label:'Ocio',icon:'🎉',color:'#AFA9EC'},
   {id:'ropa',label:'Ropa',icon:'👕',color:'#9FE1CB'},
   {id:'suscripciones',label:'Suscripciones',icon:'📱',color:'#F5C4B3'},
+   {id:'viajes',label:'Viajes',icon:'✈️',color:'#BDE0FE'},
   {id:'otros',label:'Otros',icon:'💼',color:'#D3D1C7'}
 ];
 const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -410,7 +412,7 @@ function render(){
   const expList=document.getElementById('expense-list');
   if(!me.length){expList.innerHTML='<div class="empty">Sin gastos este mes.<br>Pulsa + para añadir.</div>';}
   else{
-    const sorted=[...me].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const sorted=[...me].sort((a,b)=>(new Date(b.date)-new Date(a.date)) || ((b.createdAt||0)-(a.createdAt||0)));
     expList.innerHTML=sorted.map(e=>{
       const cat=CATS.find(c=>c.id===e.category)||CATS[7];
       const ds=new Date(e.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
@@ -428,7 +430,7 @@ function render(){
   const incList=document.getElementById('income-list');
   if(!mi.length){incList.innerHTML='<div class="empty">Sin ingresos este mes.<br>Pulsa + para añadir.</div>';}
   else{
-    const sorted=[...mi].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const sorted=[...mi].sort((a,b)=>(new Date(b.date)-new Date(a.date)) || ((b.createdAt||0)-(a.createdAt||0)));
     incList.innerHTML=sorted.map(e=>{
       const ds=new Date(e.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
       const icon=e.type==='nomina'?'💼':'✨';
@@ -446,7 +448,7 @@ function render(){
   const savList=document.getElementById('saving-list');
   if(!ms.length){savList.innerHTML='<div class="empty">Sin transferencias a ahorros.<br>Pulsa + para registrar.</div>';}
   else{
-    const sorted=[...ms].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const sorted=[...ms].sort((a,b)=>(new Date(b.date)-new Date(a.date)) || ((b.createdAt||0)-(a.createdAt||0)));
     savList.innerHTML=sorted.map(e=>{
       const ds=new Date(e.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
       return `<div class="item">
@@ -501,7 +503,30 @@ function switchTab(t){
 
 function changeMonth(d){
   vm+=d;if(vm<0){vm=11;vy--;}if(vm>11){vm=0;vy++;}
-  render();
+  
+function exportData(){
+ const data={expenses,incomes,savings,goals};
+ const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);
+ a.download='mis_finanzas_backup.json';
+ a.click();
+}
+function importData(){
+ const i=document.createElement('input');
+ i.type='file';
+ i.accept='.json';
+ i.onchange=e=>{
+  const r=new FileReader();
+  r.onload=()=>{const d=JSON.parse(r.result);
+  expenses=d.expenses||[]; incomes=d.incomes||[]; savings=d.savings||[]; goals=d.goals||[];
+  persist('mf_exp',expenses);persist('mf_inc',incomes);persist('mf_sav',savings);persist('mf_goals',goals);render();}
+  r.readAsText(e.target.files[0]);
+ };
+ i.click();
+}
+
+render();
 }
 
 function openModal(){
@@ -545,7 +570,7 @@ function saveExpense(){
   if(!amount||amount<=0){err.textContent='Introduce un importe válido';return;}
   if(!date){err.textContent='Selecciona una fecha';return;}
   err.textContent='';
-  expenses.push({id:Date.now().toString(),name,amount,type:selExpType,category:selCat,date});
+  expenses.push({id:Date.now().toString(),name,amount,type:selExpType,category:selCat,date,createdAt:Date.now()});
   persist('mf_exp',expenses);closeModal('modal-gasto');render();
 }
 
@@ -572,7 +597,7 @@ function saveIncome(){
   if(!amount||amount<=0){err.textContent='Introduce un importe válido';return;}
   if(!date){err.textContent='Selecciona una fecha';return;}
   err.textContent='';
-  incomes.push({id:Date.now().toString(),name,amount,type:selIncType,date});
+  incomes.push({id:Date.now().toString(),name,amount,type:selIncType,date,createdAt:Date.now()});
   persist('mf_inc',incomes);closeModal('modal-ingreso');render();
 }
 
@@ -594,7 +619,7 @@ function saveSaving(){
   if(!amount||amount<=0){err.textContent='Introduce un importe válido';return;}
   if(!date){err.textContent='Selecciona una fecha';return;}
   err.textContent='';
-  savings.push({id:Date.now().toString(),name,amount,dest,date});
+  savings.push({id:Date.now().toString(),name,amount,dest,date,createdAt:Date.now()});
   persist('mf_sav',savings);closeModal('modal-ahorro');render();
 }
 
