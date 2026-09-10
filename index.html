@@ -170,6 +170,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 <div class="app">
   <div class="header">
     <div class="header-row">
+      <div><h1>Mis finanzas</h1><div class="sub" id="header-sub">–</div></div>
       <div class="backup-menu">
         <button class="menu-dots" onclick="toggleBackupMenu()">⋮</button>
         <div class="backup-dropdown" id="backup-menu">
@@ -177,7 +178,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
           <button onclick="importData()">📂 Restaurar datos</button>
         </div>
       </div>
-      <div><h1>Mis finanzas</h1><div class="sub" id="header-sub">–</div></div>
     </div>
   </div>
 
@@ -531,7 +531,48 @@ function importData(){
   const r=new FileReader();
   r.onload=()=>{const d=JSON.parse(r.result);
   expenses=d.expenses||[]; incomes=d.incomes||[]; savings=d.savings||[]; goals=d.goals||[];
-  persist('mf_exp',expenses);persist('mf_inc',incomes);persist('mf_sav',savings);persist('mf_goals',goals);render();}
+  persist('mf_exp',expenses);persist('mf_inc',incomes);persist('mf_sav',savings);persist('mf_goals',goals);
+function toggleBackupMenu(){
+ const m=document.getElementById('backup-menu');
+ if(m) m.style.display=m.style.display==='block'?'none':'block';
+}
+document.addEventListener('click',e=>{
+ const menu=document.getElementById('backup-menu');
+ if(menu && !e.target.closest('.backup-menu')) menu.style.display='none';
+});
+function exportData(){
+ const data={expenses,incomes,savings,goals,backupDate:new Date().toISOString()};
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);
+ a.download='mis_finanzas_backup.json';
+ a.click();
+}
+function importData(){
+ if(!confirm('Esto sustituirá los datos actuales. ¿Quieres continuar?')) return;
+ const input=document.createElement('input');
+ input.type='file';
+ input.accept='.json';
+ input.onchange=e=>{
+  const reader=new FileReader();
+  reader.onload=()=>{
+   const d=JSON.parse(reader.result);
+   expenses=d.expenses||[];
+   incomes=d.incomes||[];
+   savings=d.savings||[];
+   goals=d.goals||[];
+   persist('mf_exp',expenses);
+   persist('mf_inc',incomes);
+   persist('mf_sav',savings);
+   persist('mf_goals',goals);
+   render();
+  };
+  reader.readAsText(e.target.files[0]);
+ };
+ input.click();
+}
+
+render();}
   r.readAsText(e.target.files[0]);
  };
  i.click();
