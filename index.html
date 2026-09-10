@@ -91,7 +91,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 /* Lists */
 .section-lbl{font-size:12px;color:var(--text3);padding:0 16px 8px}
 .item-list{padding:0 16px}
-.item{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:0.5px solid var(--border)}
+#tab-ahorros{
+  margin:0 16px 12px;
+  background:var(--surface);
+  border-radius:var(--radius);
+  padding:14px;
+}
+#tab-ahorros .section-lbl{
+  padding:0 0 8px;
+}
+#tab-ahorros .item-list{
+  padding:0;
+}
+
+.item-list.full-width{padding:0;width:100%}
+#tab-ahorros .section-lbl{padding-left:0;padding-right:0}
+#tab-ahorros .item-list{padding-left:0;padding-right:0}
+.item{display:flex;cursor:pointer;align-items:center;gap:11px;padding:11px 0;border-bottom:0.5px solid var(--border)}
 .item:last-child{border-bottom:none}
 .item-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
 .item-info{flex:1;min-width:0}
@@ -188,7 +204,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     <div class="summary">
       <div class="stat income"><div class="lbl">↓ Ingresos</div><div class="val" id="s-income">0 €</div></div>
       <div class="stat expense"><div class="lbl">↑ Gastos</div><div class="val" id="s-expense">0 €</div></div>
-      <div class="stat saving"><div class="lbl">⬡ Ahorro</div><div class="val" id="s-saving">0 €</div></div><div class="stat saving"><div class="lbl">🏦 Acumulado</div><div class="val" id="s-saving-total">0 €</div></div>
+      <div class="stat saving"><div class="lbl">⬡ Ahorro</div><div class="val" id="s-saving">0 €</div></div><div class="stat saving"><div class="lbl">💰 Acumulado</div><div class="val" id="s-saving-total">0 €</div></div>
     </div>
 
     <!-- Progress gastos vs ingresos -->
@@ -337,7 +353,9 @@ const CATS=[
   {id:'hogar',label:'Hogar',icon:'🏠',color:'#B5D4F4'},
   {id:'alimentacion',label:'Alimentación',icon:'🛒',color:'#C0DD97'},
   {id:'transporte',label:'Transporte',icon:'🚗',color:'#FAC775'},
-  {id:'salud',label:'Salud',icon:'💊',color:'#F4C0D1'},
+  {id:'salud',label:'Salud',icon:'🩺',color:'#F4C0D1'},
+  {id:'bienestar',label:'Bienestar',icon:'🧘',color:'#B8E0D2'},
+  {id:'viajes',label:'Viajes',icon:'✈️',color:'#BFD7EA'},
   {id:'ocio',label:'Ocio',icon:'🎉',color:'#AFA9EC'},
   {id:'ropa',label:'Ropa',icon:'👕',color:'#9FE1CB'},
   {id:'suscripciones',label:'Suscripciones',icon:'📱',color:'#F5C4B3'},
@@ -410,7 +428,7 @@ function render(){
   const expList=document.getElementById('expense-list');
   if(!me.length){expList.innerHTML='<div class="empty">Sin gastos este mes.<br>Pulsa + para añadir.</div>';}
   else{
-    const sorted=[...me].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const sorted=[...me].sort((a,b)=>(new Date(b.date)-new Date(a.date)) || ((b.createdAt||0)-(a.createdAt||0)));
     expList.innerHTML=sorted.map(e=>{
       const cat=CATS.find(c=>c.id===e.category)||CATS[7];
       const ds=new Date(e.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
@@ -428,7 +446,7 @@ function render(){
   const incList=document.getElementById('income-list');
   if(!mi.length){incList.innerHTML='<div class="empty">Sin ingresos este mes.<br>Pulsa + para añadir.</div>';}
   else{
-    const sorted=[...mi].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const sorted=[...mi].sort((a,b)=>(new Date(b.date)-new Date(a.date)) || ((b.createdAt||0)-(a.createdAt||0)));
     incList.innerHTML=sorted.map(e=>{
       const ds=new Date(e.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
       const icon=e.type==='nomina'?'💼':'✨';
@@ -446,11 +464,11 @@ function render(){
   const savList=document.getElementById('saving-list');
   if(!ms.length){savList.innerHTML='<div class="empty">Sin transferencias a ahorros.<br>Pulsa + para registrar.</div>';}
   else{
-    const sorted=[...ms].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const sorted=[...ms].sort((a,b)=>(new Date(b.date)-new Date(a.date)) || ((b.createdAt||0)-(a.createdAt||0)));
     savList.innerHTML=sorted.map(e=>{
       const ds=new Date(e.date).toLocaleDateString('es-ES',{day:'numeric',month:'short'});
       return `<div class="item">
-        <div class="item-icon" style="background:#eeedfe">🏦</div>
+        <div class="item-icon" style="background:#eeedfe">💰</div>
         <div class="item-info"><div class="item-name">${e.name}</div><div class="item-meta">${e.dest?e.dest+' · ':''} ${ds}</div></div>
         <div class="item-right"><div class="item-amount saving-color">${fmt(e.amount)}</div></div>
         <button class="item-del" onclick="delItem('sav','${e.id}')">×</button>
@@ -470,7 +488,7 @@ function render(){
       const gp=g.limit>0?Math.min(100,Math.round(total/g.limit*100)):0;
       const gl=g.limit-total;
       const cat=CATS.find(c=>c.id===g.category);
-      return `<div class="goal-card">
+      return `<div class="goal-card" onclick="editGoal(${i})">
         <div class="goal-top">
           <div class="goal-name">${g.name}${cat?` <span class="badge" style="background:${cat.color}30;color:#555">${cat.icon}${cat.label}</span>`:''}</div>
           <button class="goal-del" onclick="delGoal(${i})">×</button>
@@ -545,7 +563,7 @@ function saveExpense(){
   if(!amount||amount<=0){err.textContent='Introduce un importe válido';return;}
   if(!date){err.textContent='Selecciona una fecha';return;}
   err.textContent='';
-  expenses.push({id:Date.now().toString(),name,amount,type:selExpType,category:selCat,date});
+  if(window.editing?.type==='exp'){Object.assign(expenses.find(x=>x.id===window.editing.id),{name,amount,type:selExpType,category:selCat,date});window.editing=null;}else{expenses.push({id:Date.now().toString(),name,amount,type:selExpType,category:selCat,date,createdAt:Date.now()});}
   persist('mf_exp',expenses);closeModal('modal-gasto');render();
 }
 
@@ -572,7 +590,7 @@ function saveIncome(){
   if(!amount||amount<=0){err.textContent='Introduce un importe válido';return;}
   if(!date){err.textContent='Selecciona una fecha';return;}
   err.textContent='';
-  incomes.push({id:Date.now().toString(),name,amount,type:selIncType,date});
+  if(window.editing?.type==='inc'){Object.assign(incomes.find(x=>x.id===window.editing.id),{name,amount,type:selIncType,date});window.editing=null;}else{incomes.push({id:Date.now().toString(),name,amount,type:selIncType,date,createdAt:Date.now()});}
   persist('mf_inc',incomes);closeModal('modal-ingreso');render();
 }
 
@@ -594,7 +612,7 @@ function saveSaving(){
   if(!amount||amount<=0){err.textContent='Introduce un importe válido';return;}
   if(!date){err.textContent='Selecciona una fecha';return;}
   err.textContent='';
-  savings.push({id:Date.now().toString(),name,amount,dest,date});
+  if(window.editing?.type==='sav'){Object.assign(savings.find(x=>x.id===window.editing.id),{name,amount,dest,date});window.editing=null;}else{savings.push({id:Date.now().toString(),name,amount,dest,date,createdAt:Date.now()});}
   persist('mf_sav',savings);closeModal('modal-ahorro');render();
 }
 
@@ -615,6 +633,35 @@ function saveGoal(){
   goals.push({name,limit,category});persist('mf_goals',goals);closeModal('modal-objetivo');render();
 }
 function delGoal(i){if(!confirm('¿Eliminar objetivo?'))return;goals.splice(i,1);persist('mf_goals',goals);render();}
+
+
+function editItem(type,id){
+  window.editing={type,id};
+  if(type==='exp'){
+    const e=expenses.find(x=>x.id===id); if(!e)return;
+    switchTab('gastos'); openExpModal();
+    f-name.value=e.name; f-amount.value=e.amount; f-date.value=e.date;
+    setExpType(e.type); selCat=e.category; buildCatPicker();
+  }
+  if(type==='inc'){
+    const e=incomes.find(x=>x.id===id); if(!e)return;
+    switchTab('ingresos'); openIncModal();
+    i-name.value=e.name; i-amount.value=e.amount; i-date.value=e.date;
+    setIncType(e.type);
+  }
+  if(type==='sav'){
+    const e=savings.find(x=>x.id===id); if(!e)return;
+    switchTab('ahorros'); openSavModal();
+    sv-name.value=e.name; sv-amount.value=e.amount; sv-dest.value=e.dest||''; sv-date.value=e.date;
+  }
+}
+
+function editGoal(i){
+  window.editing={type:'goal',index:i};
+  const g=goals[i]; if(!g)return;
+  switchTab('objetivos'); openGoalModal();
+  g-name.value=g.name; g-limit.value=g.limit; g-cat.value=g.category||'';
+}
 
 function delItem(type,id){
   if(!confirm('¿Eliminar este registro?'))return;
